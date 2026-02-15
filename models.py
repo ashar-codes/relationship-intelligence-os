@@ -12,21 +12,23 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Authentication
     email = Column(String, unique=True, nullable=False, index=True)
-    password_hash = Column(String, nullable=True)  # Null for Google users
+    password_hash = Column(String, nullable=True)
 
-    # Profile
     name = Column(String)
-    gender = Column(String)  # Male / Female / Other
+    gender = Column(String)
+
+    # 👇 ADD THIS LINE
+    auth_token = Column(String, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # Relationships owned by user
     relationships = relationship(
         "Relationship",
         back_populates="user",
         cascade="all, delete-orphan"
     )
+
 
 
 # ======================================================
