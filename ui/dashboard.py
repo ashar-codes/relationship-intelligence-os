@@ -153,14 +153,14 @@ def render_dashboard(profile_id: int):
     # =============================
     st.markdown("## Smart Tools")
 
-    if relationship.category == "Professional":
-        tab1, tab2, tab3, tab4 = st.tabs(
-            ["Analyze", "Feeling Stuck?", "Repair", "Professional Response"]
-        )
-    else:
-        tab1, tab2, tab3 = st.tabs(
-            ["Analyze", "Feeling Stuck?", "Repair"]
-        )
+   if relationship.category == "Professional":
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["Analyze", "Feeling Stuck?", "Repair", "Professional Response", "Say No"]
+    )
+else:
+    tab1, tab2, tab3, tab5 = st.tabs(
+        ["Analyze", "Feeling Stuck?", "Repair", "Say No"]
+    )
 
     # TAB 1 - ANALYZE
     with tab1:
@@ -249,5 +249,26 @@ def render_dashboard(profile_id: int):
 
                 if response:
                     st.markdown(response)
+        # TAB - SAY NO
+if relationship.category == "Professional":
+    target_tab = tab5
+else:
+    target_tab = tab5
+
+with target_tab:
+    from services.boundary_engine import generate_polite_no
+
+    st.markdown("### Boundary Assistant")
+
+    no_context = st.text_area("What do you need to decline?")
+
+    if st.button("Generate Polite No"):
+        result = generate_polite_no(
+            no_context,
+            relationship.category
+        )
+
+        if result:
+            st.markdown(result)
 
     db.close()
