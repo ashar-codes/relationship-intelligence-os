@@ -33,17 +33,15 @@ def delete_profile(profile_id: int, user_id: int):
 
 
 def render_profile_sidebar():
-    st.sidebar.markdown("### Relationship OS")
-st.sidebar.markdown("---")
-
 
     if "user_id" not in st.session_state:
         return None
 
     user_id = st.session_state["user_id"]
 
-    st.sidebar.markdown("#### Profiles")
-
+    st.sidebar.markdown("## Relationship OS")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### Profiles")
 
     profiles = get_all_profiles(user_id)
 
