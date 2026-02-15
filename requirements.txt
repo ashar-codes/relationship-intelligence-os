@@ -3,3 +3,5 @@ groq
 sqlalchemy
 streamlit-authenticator
 pyyaml
+authlib
+requests
