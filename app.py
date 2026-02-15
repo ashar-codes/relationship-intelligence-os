@@ -79,15 +79,10 @@ init_db()
 # LOAD USER FROM COOKIE
 # (Remember Me Logic)
 # =============================
-load_user_from_cookie()
+load_user_from_token()
 
-# =============================
-# AUTH SCREEN
-# =============================
 if "user_id" not in st.session_state:
-
     st.title("Relationship Intelligence OS")
-    st.subheader("Secure Login")
 
     tab_login, tab_register = st.tabs(["Login", "Register"])
 
