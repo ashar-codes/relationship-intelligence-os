@@ -101,6 +101,54 @@ def render_dashboard(profile_id: int):
         st.info("No conversations analyzed yet.")
 
     # =============================
+    # CONVERSATION HISTORY
+    # =============================
+    st.markdown("## Conversation History")
+
+    all_convos = (
+        db.query(Conversation)
+        .filter_by(relationship_id=relationship.id)
+        .order_by(Conversation.created_at.desc())
+        .all()
+    )
+
+    if all_convos:
+
+        convo_options = {
+            f"{c.created_at.strftime('%Y-%m-%d %H:%M:%S')} | Health {c.health_score}% | Safety {c.safety_score}%": c.id
+            for c in all_convos
+        }
+
+        selected_label = st.selectbox(
+            "Select previous conversation",
+            list(convo_options.keys())
+        )
+
+        selected_id = convo_options[selected_label]
+
+        selected_convo = db.query(Conversation).filter_by(id=selected_id).first()
+
+        st.markdown("### Conversation Content")
+        st.markdown(
+            f"""
+            <div class="card">
+                {selected_convo.raw_text}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # DELETE BUTTON
+        if st.button("Delete This Conversation"):
+            db.delete(selected_convo)
+            db.commit()
+            st.success("Conversation deleted.")
+            st.rerun()
+
+    else:
+        st.info("No previous conversations stored.")
+
+    # =============================
     # SMART TOOLS
     # =============================
     st.markdown("## Smart Tools")
@@ -114,9 +162,7 @@ def render_dashboard(profile_id: int):
             ["Analyze", "Feeling Stuck?", "Repair"]
         )
 
-    # -----------------------------
     # TAB 1 - ANALYZE
-    # -----------------------------
     with tab1:
         conversation_text = st.text_area("Paste conversation here")
 
@@ -151,9 +197,7 @@ def render_dashboard(profile_id: int):
                 st.success("Conversation analyzed.")
                 st.rerun()
 
-    # -----------------------------
     # TAB 2 - STUCK
-    # -----------------------------
     with tab2:
         block_context = st.text_area("Paste last few lines")
 
@@ -168,9 +212,7 @@ def render_dashboard(profile_id: int):
             if responses:
                 st.markdown(responses)
 
-    # -----------------------------
     # TAB 3 - REPAIR
-    # -----------------------------
     with tab3:
         repair_context = st.text_area("Repair context")
 
@@ -185,11 +227,11 @@ def render_dashboard(profile_id: int):
             if repair_msg:
                 st.markdown(repair_msg)
 
-    # -----------------------------
     # TAB 4 - PROFESSIONAL RESPONSE
-    # -----------------------------
     if relationship.category == "Professional":
         with tab4:
+            from services.professional_engine import generate_professional_response
+
             st.markdown("### Professional Communication Engine")
 
             prof_context = st.text_area("Describe the situation")
@@ -200,8 +242,6 @@ def render_dashboard(profile_id: int):
             )
 
             if st.button("Generate Professional Response"):
-                from services.professional_engine import generate_professional_response
-
                 response = generate_professional_response(
                     prof_context,
                     tone
@@ -211,4 +251,3 @@ def render_dashboard(profile_id: int):
                     st.markdown(response)
 
     db.close()
-
