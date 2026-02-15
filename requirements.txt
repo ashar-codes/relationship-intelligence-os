@@ -7,3 +7,5 @@ authlib
 requests
 pytesseract
 Pillow
+passlib[bcrypt]
+streamlit-cookies-manager
