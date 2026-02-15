@@ -174,6 +174,27 @@ def render_dashboard(profile_id: int):
     with tab_analyze:
         conversation_text = st.text_area("Paste conversation here")
 
+st.markdown("### Or Upload Screenshot")
+
+uploaded_image = st.file_uploader(
+    "Upload conversation image",
+    type=["png", "jpg", "jpeg"]
+)
+
+if uploaded_image:
+    from services.ocr_engine import extract_text_from_image
+
+    extracted_text = extract_text_from_image(uploaded_image)
+
+    if extracted_text:
+        st.success("Text extracted from image.")
+        st.text_area("Extracted Text", extracted_text, height=200)
+
+        conversation_text = extracted_text
+    else:
+        st.error("Could not extract text from image.")
+
+
         if st.button("Analyze Conversation"):
             scores = analyze_conversation(conversation_text, relationship.category)
 
