@@ -2,7 +2,7 @@ import streamlit as st
 from database import init_db
 from ui.profile_manager import render_profile_sidebar
 from ui.dashboard import render_dashboard
-from auth import login_button, handle_callback
+from auth import login_user
 
 st.set_page_config(
     page_title="Relationship Intelligence OS",
