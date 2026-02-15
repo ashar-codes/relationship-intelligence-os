@@ -8,6 +8,37 @@ from services.assistant import generate_block_responses
 from services.repair import generate_repair_message
 
 
+def render_text_input_with_ocr(label: str, key_prefix: str):
+
+    text_value = st.text_area(label, key=f"{key_prefix}_text")
+
+    st.markdown("#### Or Upload Screenshot")
+
+    uploaded_image = st.file_uploader(
+        "Upload image",
+        type=["png", "jpg", "jpeg"],
+        key=f"{key_prefix}_upload"
+    )
+
+    if uploaded_image:
+        from services.ocr_engine import extract_text_from_image
+
+        extracted_text = extract_text_from_image(uploaded_image)
+
+        if extracted_text:
+            st.success("Text extracted from image.")
+            text_value = st.text_area(
+                "Extracted Text",
+                value=extracted_text,
+                height=200,
+                key=f"{key_prefix}_extracted"
+            )
+        else:
+            st.error("Could not extract text from image.")
+
+    return text_value
+
+
 def render_dashboard(profile_id: int):
 
     db = SessionLocal()
@@ -24,13 +55,13 @@ def render_dashboard(profile_id: int):
     toxicity = relationship.toxicity_index or 0
 
     if toxicity > 60:
-        badge_color = "#ef4444"
+        badge_class = "badge-high"
         badge_text = "High Tension"
     elif toxicity > 30:
-        badge_color = "#f59e0b"
+        badge_class = "badge-mid"
         badge_text = "Moderate Tension"
     else:
-        badge_color = "#22c55e"
+        badge_class = "badge-low"
         badge_text = "Stable"
 
     st.markdown(
@@ -41,7 +72,7 @@ def render_dashboard(profile_id: int):
             <div class="metric-label">
                 {relationship.relationship_type} • {relationship.category}
             </div>
-            <div style="margin-top:10px;color:{badge_color};font-weight:500;">
+            <div class="badge {badge_class}">
                 Toxicity Index: {toxicity} • {badge_text}
             </div>
         </div>
@@ -50,7 +81,7 @@ def render_dashboard(profile_id: int):
     )
 
     # =============================
-    # LOAD LAST CONVERSATION
+    # LAST CONVERSATION METRICS
     # =============================
     last_convo = (
         db.query(Conversation)
@@ -60,6 +91,7 @@ def render_dashboard(profile_id: int):
     )
 
     if last_convo:
+
         st.markdown("## Relationship Metrics")
 
         def metric_card(title, value, color="white", glow=False):
@@ -151,52 +183,23 @@ def render_dashboard(profile_id: int):
     is_professional = relationship.category == "Professional"
 
     if is_professional:
-        tabs = st.tabs([
-            "Analyze",
-            "Feeling Stuck?",
-            "Repair",
-            "Professional Response",
-            "Say No"
-        ])
-        tab_analyze, tab_stuck, tab_repair, tab_professional, tab_no = tabs
+        tab_analyze, tab_stuck, tab_repair, tab_professional, tab_no = st.tabs(
+            ["Analyze", "Feeling Stuck?", "Repair", "Professional Response", "Say No"]
+        )
     else:
-        tabs = st.tabs([
-            "Analyze",
-            "Feeling Stuck?",
-            "Repair",
-            "Say No"
-        ])
-        tab_analyze, tab_stuck, tab_repair, tab_no = tabs
-
-    # -----------------------------
-    # ANALYZE TAB
-    # -----------------------------
-    with tab_analyze:
-
-        conversation_text = st.text_area("Paste conversation here")
-
-        st.markdown("### Or Upload Screenshot")
-
-        uploaded_image = st.file_uploader(
-            "Upload conversation image",
-            type=["png", "jpg", "jpeg"],
-            key="ocr_upload"
+        tab_analyze, tab_stuck, tab_repair, tab_no = st.tabs(
+            ["Analyze", "Feeling Stuck?", "Repair", "Say No"]
         )
 
-        if uploaded_image:
-            from services.ocr_engine import extract_text_from_image
+    # =============================
+    # ANALYZE
+    # =============================
+    with tab_analyze:
 
-            extracted_text = extract_text_from_image(uploaded_image)
-
-            if extracted_text:
-                st.success("Text extracted from image.")
-                conversation_text = st.text_area(
-                    "Extracted Text",
-                    value=extracted_text,
-                    height=200
-                )
-            else:
-                st.error("Could not extract text from image.")
+        conversation_text = render_text_input_with_ocr(
+            "Paste conversation here",
+            "analyze"
+        )
 
         if st.button("Analyze Conversation"):
             scores = analyze_conversation(conversation_text, relationship.category)
@@ -230,11 +233,15 @@ def render_dashboard(profile_id: int):
                 st.success("Conversation analyzed.")
                 st.rerun()
 
-    # -----------------------------
-    # STUCK TAB
-    # -----------------------------
+    # =============================
+    # FEELING STUCK
+    # =============================
     with tab_stuck:
-        block_context = st.text_area("Paste last few lines")
+
+        block_context = render_text_input_with_ocr(
+            "Paste last few lines",
+            "stuck"
+        )
 
         if st.button("Suggest Responses"):
             responses = generate_block_responses(
@@ -246,11 +253,15 @@ def render_dashboard(profile_id: int):
             if responses:
                 st.markdown(responses)
 
-    # -----------------------------
-    # REPAIR TAB
-    # -----------------------------
+    # =============================
+    # REPAIR
+    # =============================
     with tab_repair:
-        repair_context = st.text_area("Repair context")
+
+        repair_context = render_text_input_with_ocr(
+            "Repair context",
+            "repair"
+        )
 
         if st.button("Generate Repair"):
             repair_msg = generate_repair_message(
@@ -262,14 +273,19 @@ def render_dashboard(profile_id: int):
             if repair_msg:
                 st.markdown(repair_msg)
 
-    # -----------------------------
-    # PROFESSIONAL TAB
-    # -----------------------------
+    # =============================
+    # PROFESSIONAL
+    # =============================
     if is_professional:
         with tab_professional:
+
             from services.professional_engine import generate_professional_response
 
-            prof_context = st.text_area("Describe the situation")
+            prof_context = render_text_input_with_ocr(
+                "Describe the situation",
+                "professional"
+            )
+
             tone = st.selectbox("Select Tone", ["Formal", "Neutral", "Direct"])
 
             if st.button("Generate Professional Response"):
@@ -277,13 +293,17 @@ def render_dashboard(profile_id: int):
                 if response:
                     st.markdown(response)
 
-    # -----------------------------
-    # SAY NO TAB
-    # -----------------------------
+    # =============================
+    # SAY NO
+    # =============================
     with tab_no:
+
         from services.boundary_engine import generate_polite_no
 
-        no_context = st.text_area("What do you need to decline?")
+        no_context = render_text_input_with_ocr(
+            "What do you need to decline?",
+            "no"
+        )
 
         if st.button("Generate Polite No"):
             result = generate_polite_no(no_context, relationship.category)
