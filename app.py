@@ -2,12 +2,7 @@ import streamlit as st
 from database import init_db
 from ui.profile_manager import render_profile_sidebar
 from ui.dashboard import render_dashboard
-from auth import (
-    register_user,
-    login_user,
-    load_user_from_cookie,
-    logout_user
-)
+from auth import register_user, login_user, load_user_from_token, logout_user
 
 # =============================
 # PAGE CONFIG
