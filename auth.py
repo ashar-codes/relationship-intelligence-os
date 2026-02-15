@@ -1,33 +1,36 @@
 import streamlit as st
+import secrets
 from passlib.context import CryptContext
 from database import SessionLocal
 from models import User
-from streamlit_cookies_manager import EncryptedCookieManager
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 # =========================
-# GET COOKIE MANAGER SAFELY
+# AUTO LOGIN FROM TOKEN
 # =========================
-def get_cookies():
-    cookies = EncryptedCookieManager(
-        prefix="relationship_os_",
-        password="super-secret-key"
-    )
+def load_user_from_token():
 
-    if not cookies.ready():
-        st.stop()
+    params = st.query_params
 
-    return cookies
+    if "auth_token" in params:
+        token = params["auth_token"]
+
+        db = SessionLocal()
+        user = db.query(User).filter_by(auth_token=token).first()
+
+        if user:
+            st.session_state["user_id"] = user.id
+            st.session_state["user_email"] = user.email
+
+        db.close()
 
 
 # =========================
 # REGISTER
 # =========================
 def register_user():
-
-    cookies = get_cookies()
 
     st.subheader("Create Account")
 
@@ -51,21 +54,23 @@ def register_user():
             db.close()
             return
 
+        token = secrets.token_urlsafe(32)
+
         user = User(
             name=name,
             email=email,
             gender=gender,
-            password_hash=pwd_context.hash(password)
+            password_hash=pwd_context.hash(password),
+            auth_token=token
         )
 
         db.add(user)
         db.commit()
 
-        cookies["user_id"] = str(user.id)
-        cookies.save()
-
         st.session_state["user_id"] = user.id
         st.session_state["user_email"] = user.email
+
+        st.query_params["auth_token"] = token
 
         db.close()
         st.rerun()
@@ -75,8 +80,6 @@ def register_user():
 # LOGIN
 # =========================
 def login_user():
-
-    cookies = get_cookies()
 
     st.subheader("Login")
 
@@ -98,34 +101,17 @@ def login_user():
             db.close()
             return
 
-        cookies["user_id"] = str(user.id)
-        cookies.save()
+        token = secrets.token_urlsafe(32)
+        user.auth_token = token
+        db.commit()
 
         st.session_state["user_id"] = user.id
         st.session_state["user_email"] = user.email
 
+        st.query_params["auth_token"] = token
+
         db.close()
         st.rerun()
-
-
-# =========================
-# LOAD USER FROM COOKIE
-# =========================
-def load_user_from_cookie():
-
-    cookies = get_cookies()
-
-    if "user_id" in cookies:
-        user_id = cookies["user_id"]
-
-        db = SessionLocal()
-        user = db.query(User).filter_by(id=int(user_id)).first()
-
-        if user:
-            st.session_state["user_id"] = user.id
-            st.session_state["user_email"] = user.email
-
-        db.close()
 
 
 # =========================
@@ -133,10 +119,17 @@ def load_user_from_cookie():
 # =========================
 def logout_user():
 
-    cookies = get_cookies()
-
     if st.sidebar.button("Logout"):
-        cookies["user_id"] = ""
-        cookies.save()
+
+        db = SessionLocal()
+        user = db.query(User).filter_by(id=st.session_state["user_id"]).first()
+
+        if user:
+            user.auth_token = None
+            db.commit()
+
+        db.close()
+
         st.session_state.clear()
+        st.query_params.clear()
         st.rerun()
