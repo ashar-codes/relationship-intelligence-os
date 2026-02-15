@@ -105,8 +105,18 @@ def render_dashboard(profile_id: int):
     # =============================
     st.markdown("## Smart Tools")
 
-    tab1, tab2, tab3 = st.tabs(["Analyze", "Feeling Stuck?", "Repair"])
+    if relationship.category == "Professional":
+        tab1, tab2, tab3, tab4 = st.tabs(
+            ["Analyze", "Feeling Stuck?", "Repair", "Professional Response"]
+        )
+    else:
+        tab1, tab2, tab3 = st.tabs(
+            ["Analyze", "Feeling Stuck?", "Repair"]
+        )
 
+    # -----------------------------
+    # TAB 1 - ANALYZE
+    # -----------------------------
     with tab1:
         conversation_text = st.text_area("Paste conversation here")
 
@@ -141,6 +151,9 @@ def render_dashboard(profile_id: int):
                 st.success("Conversation analyzed.")
                 st.rerun()
 
+    # -----------------------------
+    # TAB 2 - STUCK
+    # -----------------------------
     with tab2:
         block_context = st.text_area("Paste last few lines")
 
@@ -155,6 +168,9 @@ def render_dashboard(profile_id: int):
             if responses:
                 st.markdown(responses)
 
+    # -----------------------------
+    # TAB 3 - REPAIR
+    # -----------------------------
     with tab3:
         repair_context = st.text_area("Repair context")
 
@@ -169,4 +185,30 @@ def render_dashboard(profile_id: int):
             if repair_msg:
                 st.markdown(repair_msg)
 
+    # -----------------------------
+    # TAB 4 - PROFESSIONAL RESPONSE
+    # -----------------------------
+    if relationship.category == "Professional":
+        with tab4:
+            st.markdown("### Professional Communication Engine")
+
+            prof_context = st.text_area("Describe the situation")
+
+            tone = st.selectbox(
+                "Select Tone",
+                ["Formal", "Neutral", "Direct"]
+            )
+
+            if st.button("Generate Professional Response"):
+                from services.professional_engine import generate_professional_response
+
+                response = generate_professional_response(
+                    prof_context,
+                    tone
+                )
+
+                if response:
+                    st.markdown(response)
+
     db.close()
+
