@@ -12,7 +12,11 @@ def login_button():
     client_id = st.secrets["auth"]["client_id"]
     redirect_uri = st.secrets["auth"]["redirect_uri"]
 
-    oauth = OAuth2Session(client_id, redirect_uri=redirect_uri, scope="openid email profile")
+    oauth = OAuth2Session(
+        client_id,
+        redirect_uri=redirect_uri,
+        scope="openid email profile"
+    )
 
     authorization_url, state = oauth.create_authorization_url(AUTH_URL)
 
@@ -22,19 +26,23 @@ def login_button():
 
 
 def handle_callback():
+
     if "code" not in st.query_params:
-        return None
+        return
 
     client_id = st.secrets["auth"]["client_id"]
     client_secret = st.secrets["auth"]["client_secret"]
     redirect_uri = st.secrets["auth"]["redirect_uri"]
+
+    # Reconstruct full callback URL manually
+    code = st.query_params["code"]
 
     oauth = OAuth2Session(client_id, redirect_uri=redirect_uri)
 
     token = oauth.fetch_token(
         TOKEN_URL,
         client_secret=client_secret,
-        authorization_response=st.request.url
+        code=code
     )
 
     resp = oauth.get(USER_INFO_URL)
@@ -52,9 +60,10 @@ def handle_callback():
         db.add(user)
         db.commit()
 
-    db.close()
-
     st.session_state["user_id"] = user.id
     st.session_state["user_email"] = user.email
 
+    db.close()
+
+    # Clear query params after login
     st.query_params.clear()
