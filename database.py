@@ -14,3 +14,4 @@ Base = declarative_base()
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+from models import Relationship, Conversation
