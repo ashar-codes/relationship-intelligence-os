@@ -60,7 +60,6 @@ def render_dashboard(profile_id: int):
     )
 
     if last_convo:
-
         st.markdown("## Relationship Metrics")
 
         def metric_card(title, value, color="white", glow=False):
@@ -80,25 +79,27 @@ def render_dashboard(profile_id: int):
         col1, col2 = st.columns(2)
         col3, col4 = st.columns(2)
 
-        health_color = "#22c55e" if last_convo.health_score > 70 else "#f59e0b"
-        safety_color = "#3b82f6" if last_convo.safety_score > 70 else "#f59e0b"
-        risk_a_color = "#ef4444" if last_convo.risk_a > 50 else "#f59e0b"
-        risk_b_color = "#ef4444" if last_convo.risk_b > 50 else "#f59e0b"
-
         with col1:
-            metric_card("Communication Health", f"{last_convo.health_score}%", health_color)
+            metric_card("Communication Health",
+                        f"{last_convo.health_score}%",
+                        "#22c55e" if last_convo.health_score > 70 else "#f59e0b")
 
         with col2:
-            metric_card("Emotional Safety", f"{last_convo.safety_score}%", safety_color)
+            metric_card("Emotional Safety",
+                        f"{last_convo.safety_score}%",
+                        "#3b82f6" if last_convo.safety_score > 70 else "#f59e0b")
 
         with col3:
-            metric_card("Partner A Risk", f"{last_convo.risk_a}%", risk_a_color, glow=last_convo.risk_a > 70)
+            metric_card("Partner A Risk",
+                        f"{last_convo.risk_a}%",
+                        "#ef4444" if last_convo.risk_a > 50 else "#f59e0b",
+                        glow=last_convo.risk_a > 70)
 
         with col4:
-            metric_card("Partner B Risk", f"{last_convo.risk_b}%", risk_b_color, glow=last_convo.risk_b > 70)
-
-    else:
-        st.info("No conversations analyzed yet.")
+            metric_card("Partner B Risk",
+                        f"{last_convo.risk_b}%",
+                        "#ef4444" if last_convo.risk_b > 50 else "#f59e0b",
+                        glow=last_convo.risk_b > 70)
 
     # =============================
     # CONVERSATION HISTORY
@@ -114,31 +115,25 @@ def render_dashboard(profile_id: int):
 
     if all_convos:
 
-        convo_options = {
-            f"{c.created_at.strftime('%Y-%m-%d %H:%M:%S')} | Health {c.health_score}% | Safety {c.safety_score}%": c.id
+        convo_map = {
+            f"{c.created_at.strftime('%Y-%m-%d %H:%M:%S')} | H:{c.health_score}% | S:{c.safety_score}%": c.id
             for c in all_convos
         }
 
         selected_label = st.selectbox(
-            "Select previous conversation",
-            list(convo_options.keys())
+            "Select Conversation",
+            list(convo_map.keys())
         )
 
-        selected_id = convo_options[selected_label]
-
+        selected_id = convo_map[selected_label]
         selected_convo = db.query(Conversation).filter_by(id=selected_id).first()
 
         st.markdown("### Conversation Content")
         st.markdown(
-            f"""
-            <div class="card">
-                {selected_convo.raw_text}
-            </div>
-            """,
+            f"<div class='card'>{selected_convo.raw_text}</div>",
             unsafe_allow_html=True
         )
 
-        # DELETE BUTTON
         if st.button("Delete This Conversation"):
             db.delete(selected_convo)
             db.commit()
@@ -153,17 +148,30 @@ def render_dashboard(profile_id: int):
     # =============================
     st.markdown("## Smart Tools")
 
-   if relationship.category == "Professional":
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["Analyze", "Feeling Stuck?", "Repair", "Professional Response", "Say No"]
-    )
-else:
-    tab1, tab2, tab3, tab5 = st.tabs(
-        ["Analyze", "Feeling Stuck?", "Repair", "Say No"]
-    )
+    is_professional = relationship.category == "Professional"
 
-    # TAB 1 - ANALYZE
-    with tab1:
+    if is_professional:
+        tabs = st.tabs([
+            "Analyze",
+            "Feeling Stuck?",
+            "Repair",
+            "Professional Response",
+            "Say No"
+        ])
+        tab_analyze, tab_stuck, tab_repair, tab_professional, tab_no = tabs
+    else:
+        tabs = st.tabs([
+            "Analyze",
+            "Feeling Stuck?",
+            "Repair",
+            "Say No"
+        ])
+        tab_analyze, tab_stuck, tab_repair, tab_no = tabs
+
+    # -----------------------------
+    # ANALYZE
+    # -----------------------------
+    with tab_analyze:
         conversation_text = st.text_area("Paste conversation here")
 
         if st.button("Analyze Conversation"):
@@ -189,6 +197,7 @@ else:
                     risk_a=scores["risk_a"],
                     risk_b=scores["risk_b"]
                 )
+
                 db.add(convo)
                 db.commit()
 
@@ -197,8 +206,10 @@ else:
                 st.success("Conversation analyzed.")
                 st.rerun()
 
-    # TAB 2 - STUCK
-    with tab2:
+    # -----------------------------
+    # STUCK
+    # -----------------------------
+    with tab_stuck:
         block_context = st.text_area("Paste last few lines")
 
         if st.button("Suggest Responses"):
@@ -208,12 +219,13 @@ else:
                 relationship.user_style_summary,
                 relationship.toxicity_index
             )
-
             if responses:
                 st.markdown(responses)
 
-    # TAB 3 - REPAIR
-    with tab3:
+    # -----------------------------
+    # REPAIR
+    # -----------------------------
+    with tab_repair:
         repair_context = st.text_area("Repair context")
 
         if st.button("Generate Repair"):
@@ -223,52 +235,38 @@ else:
                 relationship.user_style_summary,
                 relationship.toxicity_index
             )
-
             if repair_msg:
                 st.markdown(repair_msg)
 
-    # TAB 4 - PROFESSIONAL RESPONSE
-    if relationship.category == "Professional":
-        with tab4:
+    # -----------------------------
+    # PROFESSIONAL RESPONSE
+    # -----------------------------
+    if is_professional:
+        with tab_professional:
             from services.professional_engine import generate_professional_response
 
-            st.markdown("### Professional Communication Engine")
-
             prof_context = st.text_area("Describe the situation")
-
-            tone = st.selectbox(
-                "Select Tone",
-                ["Formal", "Neutral", "Direct"]
-            )
+            tone = st.selectbox("Select Tone", ["Formal", "Neutral", "Direct"])
 
             if st.button("Generate Professional Response"):
-                response = generate_professional_response(
-                    prof_context,
-                    tone
-                )
-
+                response = generate_professional_response(prof_context, tone)
                 if response:
                     st.markdown(response)
-        # TAB - SAY NO
-if relationship.category == "Professional":
-    target_tab = tab5
-else:
-    target_tab = tab5
 
-with target_tab:
-    from services.boundary_engine import generate_polite_no
+    # -----------------------------
+    # SAY NO (ALL RELATIONSHIPS)
+    # -----------------------------
+    with tab_no:
+        from services.boundary_engine import generate_polite_no
 
-    st.markdown("### Boundary Assistant")
+        no_context = st.text_area("What do you need to decline?")
 
-    no_context = st.text_area("What do you need to decline?")
-
-    if st.button("Generate Polite No"):
-        result = generate_polite_no(
-            no_context,
-            relationship.category
-        )
-
-        if result:
-            st.markdown(result)
+        if st.button("Generate Polite No"):
+            result = generate_polite_no(
+                no_context,
+                relationship.category
+            )
+            if result:
+                st.markdown(result)
 
     db.close()
