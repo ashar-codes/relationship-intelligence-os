@@ -2,7 +2,7 @@ import streamlit as st
 from database import init_db
 from ui.profile_manager import render_profile_sidebar
 from ui.dashboard import render_dashboard
-from auth import login_user, handle_callback, login_button
+from auth import login_user, handle_callback
 
 
 st.set_page_config(
@@ -10,7 +10,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# 👇 ADD STYLING RIGHT AFTER
+# =============================
+# PREMIUM DARK STYLING
+# =============================
 st.markdown("""
 <style>
 
@@ -52,7 +54,6 @@ section[data-testid="stSidebar"] {
     font-size: 36px;
     font-weight: 600;
     letter-spacing: -1px;
-    transition: all 0.4s ease-in-out;
 }
 
 /* Label */
@@ -95,17 +96,28 @@ section[data-testid="stSidebar"] {
 </style>
 """, unsafe_allow_html=True)
 
-
+# =============================
+# INIT DATABASE
+# =============================
 init_db()
 
+# =============================
+# HANDLE OAUTH CALLBACK
+# =============================
 handle_callback()
 
+# =============================
+# AUTH CHECK
+# =============================
 if "user_id" not in st.session_state:
     st.title("Relationship Intelligence OS")
     st.subheader("Login Required")
-    login_user()
+    login_user()   # ← Correct function
     st.stop()
 
+# =============================
+# USER DASHBOARD
+# =============================
 st.sidebar.write(f"Logged in as: {st.session_state['user_email']}")
 
 selected_profile_id = render_profile_sidebar()
