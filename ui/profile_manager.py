@@ -7,7 +7,7 @@ from services.risk_engine import update_toxicity_memory
 
 def get_all_profiles():
     db = SessionLocal()
-    profiles = db.query(Relationship).all()
+   profiles = db.query(Relationship).filter_by(user_id=st.session_state["user_id"]).all()
     db.close()
     return profiles
 
@@ -15,9 +15,11 @@ def get_all_profiles():
 def create_profile(name: str, relationship_type: str, category: str):
     db = SessionLocal()
     profile = Relationship(
-        name=name,
-        relationship_type=relationship_type,
-        category=category
+    name=name,
+    relationship_type=relationship_type,
+    category=category,
+    user_id=st.session_state["user_id"]
+)
     )
     db.add(profile)
     db.commit()
