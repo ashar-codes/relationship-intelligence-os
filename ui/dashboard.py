@@ -18,55 +18,25 @@ def render_dashboard(profile_id: int):
         db.close()
         return
 
-    st.title(f"{relationship.name} Dashboard")
-    st.caption(f"Type: {relationship.relationship_type} | Category: {relationship.category}")
+    # =============================
+    # HEADER CARD
+    # =============================
+    st.markdown(
+        f"""
+        <div class="card">
+            <div class="metric-label">Relationship</div>
+            <div class="metric-value">{relationship.name}</div>
+            <div class="metric-label">
+                {relationship.relationship_type} • {relationship.category}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    # -----------------------------
-    # Analyze New Conversation
-    # -----------------------------
-    st.subheader("Analyze Conversation")
-
-    conversation_text = st.text_area("Paste conversation here")
-
-    if st.button("Analyze"):
-        scores = analyze_conversation(conversation_text, relationship.category)
-
-        if scores:
-
-            # Apply risk memory
-            toxicity = update_toxicity_memory(
-                db,
-                relationship,
-                scores["health"],
-                scores["safety"],
-                scores["risk_a"],
-                scores["risk_b"]
-            )
-
-            # Cap health based on toxicity
-            capped_health = apply_health_cap(scores["health"], toxicity)
-
-            # Store conversation
-            convo = Conversation(
-                relationship_id=relationship.id,
-                raw_text=conversation_text,
-                health_score=capped_health,
-                safety_score=scores["safety"],
-                risk_a=scores["risk_a"],
-                risk_b=scores["risk_b"]
-            )
-            db.add(convo)
-            db.commit()
-
-            # Update style profile
-            update_style_profile(db, relationship, conversation_text)
-
-            st.success("Conversation analyzed.")
-            st.rerun()
-
-    # -----------------------------
-    # Load Last Conversation
-    # -----------------------------
+    # =============================
+    # LOAD LAST CONVERSATION
+    # =============================
     last_convo = (
         db.query(Conversation)
         .filter_by(relationship_id=relationship.id)
@@ -76,41 +46,119 @@ def render_dashboard(profile_id: int):
 
     if last_convo:
 
-        st.subheader("Live Relationship Metrics")
+        st.markdown("## Relationship Metrics")
 
         col1, col2 = st.columns(2)
+        col3, col4 = st.columns(2)
+
+        def metric_card(title, value, color="white", glow=False):
+            glow_class = "glow-red" if glow else ""
+            st.markdown(
+                f"""
+                <div class="card {glow_class}">
+                    <div class="metric-label">{title}</div>
+                    <div class="metric-value" style="color:{color};">
+                        {value}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        health_color = "#22c55e" if last_convo.health_score > 70 else "#f59e0b"
+        safety_color = "#3b82f6" if last_convo.safety_score > 70 else "#f59e0b"
+        risk_a_color = "#ef4444" if last_convo.risk_a > 50 else "#f59e0b"
+        risk_b_color = "#ef4444" if last_convo.risk_b > 50 else "#f59e0b"
 
         with col1:
-            st.progress(last_convo.health_score / 100)
-            st.caption(f"Communication Health: {last_convo.health_score}")
-
-            st.progress(last_convo.safety_score / 100)
-            st.caption(f"Emotional Safety: {last_convo.safety_score}")
+            metric_card("Communication Health", f"{last_convo.health_score}%", health_color)
 
         with col2:
-            st.progress(last_convo.risk_a / 100)
-            st.caption(f"Partner A Risk: {last_convo.risk_a}")
+            metric_card("Emotional Safety", f"{last_convo.safety_score}%", safety_color)
 
-            st.progress(last_convo.risk_b / 100)
-            st.caption(f"Partner B Risk: {last_convo.risk_b}")
+        with col3:
+            metric_card("Partner A Risk", f"{last_convo.risk_a}%", risk_a_color, glow=last_convo.risk_a > 70)
 
-        # -------------------------
-        # Red Flag Section
-        # -------------------------
-        st.subheader("Red Flag Detection")
+        with col4:
+            metric_card("Partner B Risk", f"{last_convo.risk_b}%", risk_b_color, glow=last_convo.risk_b > 70)
+
+        # =============================
+        # RED FLAG INTELLIGENCE CARD
+        # =============================
+        st.markdown("## Intelligence Insight")
 
         if last_convo.risk_b > 70:
-            st.error("🚩 High Risk Behavior Detected")
+            insight = "🚩 High escalation pattern detected. Emotional safety is compromised."
+            color = "#ef4444"
         elif last_convo.risk_b > 40:
-            st.warning("⚠ Early Warning Signs")
+            insight = "⚠ Early warning signals present. Monitor communication tone."
+            color = "#f59e0b"
         else:
-            st.success("✅ No Major Red Flags")
+            insight = "✅ Communication currently stable."
+            color = "#22c55e"
 
-        # -------------------------
-        # Block Assistant
-        # -------------------------
-        st.subheader("Feeling Stuck?")
+        st.markdown(
+            f"""
+            <div class="card">
+                <div class="metric-value" style="color:{color};">
+                    {insight}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
+    else:
+        st.info("No conversations analyzed yet.")
+
+    # =============================
+    # SMART TOOLS (TABS)
+    # =============================
+    st.markdown("## Smart Tools")
+
+    tab1, tab2, tab3 = st.tabs(["Analyze", "Feeling Stuck?", "Repair"])
+
+    # -----------------------------
+    # TAB 1 - ANALYZE
+    # -----------------------------
+    with tab1:
+        conversation_text = st.text_area("Paste conversation here")
+
+        if st.button("Analyze Conversation"):
+            scores = analyze_conversation(conversation_text, relationship.category)
+
+            if scores:
+                toxicity = update_toxicity_memory(
+                    db,
+                    relationship,
+                    scores["health"],
+                    scores["safety"],
+                    scores["risk_a"],
+                    scores["risk_b"]
+                )
+
+                capped_health = apply_health_cap(scores["health"], toxicity)
+
+                convo = Conversation(
+                    relationship_id=relationship.id,
+                    raw_text=conversation_text,
+                    health_score=capped_health,
+                    safety_score=scores["safety"],
+                    risk_a=scores["risk_a"],
+                    risk_b=scores["risk_b"]
+                )
+                db.add(convo)
+                db.commit()
+
+                update_style_profile(db, relationship, conversation_text)
+
+                st.success("Conversation analyzed.")
+                st.rerun()
+
+    # -----------------------------
+    # TAB 2 - BLOCK ASSISTANT
+    # -----------------------------
+    with tab2:
         block_context = st.text_area("Paste last few lines")
 
         if st.button("Suggest Responses"):
@@ -124,11 +172,10 @@ def render_dashboard(profile_id: int):
             if responses:
                 st.markdown(responses)
 
-        # -------------------------
-        # Repair Section
-        # -------------------------
-        st.subheader("Repair Conversation")
-
+    # -----------------------------
+    # TAB 3 - REPAIR
+    # -----------------------------
+    with tab3:
         repair_context = st.text_area("Repair context")
 
         if st.button("Generate Repair"):
@@ -141,8 +188,5 @@ def render_dashboard(profile_id: int):
 
             if repair_msg:
                 st.markdown(repair_msg)
-
-    else:
-        st.info("No conversations analyzed yet.")
 
     db.close()
