@@ -2,7 +2,8 @@ import streamlit as st
 from database import init_db
 from ui.profile_manager import render_profile_sidebar
 from ui.dashboard import render_dashboard
-from auth import login_user
+from auth import login_user, handle_callback, login_button
+
 
 st.set_page_config(
     page_title="Relationship Intelligence OS",
@@ -97,14 +98,12 @@ section[data-testid="stSidebar"] {
 
 init_db()
 
-# Handle OAuth callback
 handle_callback()
 
-# If not logged in
 if "user_id" not in st.session_state:
     st.title("Relationship Intelligence OS")
     st.subheader("Login Required")
-    login_button()
+    login_user()
     st.stop()
 
 st.sidebar.write(f"Logged in as: {st.session_state['user_email']}")
