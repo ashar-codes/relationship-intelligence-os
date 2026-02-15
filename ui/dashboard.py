@@ -169,36 +169,34 @@ def render_dashboard(profile_id: int):
         tab_analyze, tab_stuck, tab_repair, tab_no = tabs
 
     # -----------------------------
-    # ANALYZE
+    # ANALYZE TAB
     # -----------------------------
     with tab_analyze:
 
-    conversation_text = st.text_area("Paste conversation here")
+        conversation_text = st.text_area("Paste conversation here")
 
-    st.markdown("### Or Upload Screenshot")
+        st.markdown("### Or Upload Screenshot")
 
-    uploaded_image = st.file_uploader(
-        "Upload conversation image",
-        type=["png", "jpg", "jpeg"],
-        key="ocr_upload"
-    )
+        uploaded_image = st.file_uploader(
+            "Upload conversation image",
+            type=["png", "jpg", "jpeg"],
+            key="ocr_upload"
+        )
 
-    if uploaded_image:
-        from services.ocr_engine import extract_text_from_image
+        if uploaded_image:
+            from services.ocr_engine import extract_text_from_image
 
-        extracted_text = extract_text_from_image(uploaded_image)
+            extracted_text = extract_text_from_image(uploaded_image)
 
-        if extracted_text:
-            st.success("Text extracted from image.")
-            conversation_text = st.text_area(
-                "Extracted Text",
-                value=extracted_text,
-                height=200
-            )
-        else:
-            st.error("Could not extract text from image.")
-
-
+            if extracted_text:
+                st.success("Text extracted from image.")
+                conversation_text = st.text_area(
+                    "Extracted Text",
+                    value=extracted_text,
+                    height=200
+                )
+            else:
+                st.error("Could not extract text from image.")
 
         if st.button("Analyze Conversation"):
             scores = analyze_conversation(conversation_text, relationship.category)
@@ -233,7 +231,7 @@ def render_dashboard(profile_id: int):
                 st.rerun()
 
     # -----------------------------
-    # STUCK
+    # STUCK TAB
     # -----------------------------
     with tab_stuck:
         block_context = st.text_area("Paste last few lines")
@@ -249,7 +247,7 @@ def render_dashboard(profile_id: int):
                 st.markdown(responses)
 
     # -----------------------------
-    # REPAIR
+    # REPAIR TAB
     # -----------------------------
     with tab_repair:
         repair_context = st.text_area("Repair context")
@@ -265,7 +263,7 @@ def render_dashboard(profile_id: int):
                 st.markdown(repair_msg)
 
     # -----------------------------
-    # PROFESSIONAL RESPONSE
+    # PROFESSIONAL TAB
     # -----------------------------
     if is_professional:
         with tab_professional:
@@ -280,7 +278,7 @@ def render_dashboard(profile_id: int):
                     st.markdown(response)
 
     # -----------------------------
-    # SAY NO (ALL RELATIONSHIPS)
+    # SAY NO TAB
     # -----------------------------
     with tab_no:
         from services.boundary_engine import generate_polite_no
@@ -288,10 +286,7 @@ def render_dashboard(profile_id: int):
         no_context = st.text_area("What do you need to decline?")
 
         if st.button("Generate Polite No"):
-            result = generate_polite_no(
-                no_context,
-                relationship.category
-            )
+            result = generate_polite_no(no_context, relationship.category)
             if result:
                 st.markdown(result)
 
