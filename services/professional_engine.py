@@ -1,10 +1,10 @@
- from groq import Groq
+from groq import Groq
 import streamlit as st
-
-client = Groq(api_key=st.secrets["groq"]["api_key"])
 
 
 def generate_professional_response(context, tone_level):
+
+    client = Groq(api_key=st.secrets["groq"]["api_key"])
 
     tone_instruction = {
         "Formal": "Use highly professional corporate tone.",
@@ -13,24 +13,24 @@ def generate_professional_response(context, tone_level):
     }.get(tone_level, "Use professional tone.")
 
     prompt = f"""
-You are a professional communication strategist.
+You are a professional workplace communication strategist.
 
 Context:
 {context}
 
 Task:
-1. Create a professional explanation that maintains credibility.
+1. Provide a professional explanation.
 2. Provide a strategic recovery plan with timeline.
-3. Keep authority-respecting tone.
+3. Provide an optional follow-up line.
 
-Tone Instruction:
+Tone instruction:
 {tone_instruction}
 
 Do NOT sound emotional.
 Do NOT over-apologize.
 Do NOT blame others.
 
-Structure output like this:
+Structure:
 
 Professional Explanation:
 ...
@@ -43,7 +43,7 @@ Optional Follow-Up:
 """
 
     response = client.chat.completions.create(
-        model="llama-3.1-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.4,
     )
