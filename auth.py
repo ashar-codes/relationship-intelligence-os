@@ -1,5 +1,10 @@
 import streamlit as st
-from passlib.hash import bcrypt
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto"
+)
 from database import SessionLocal
 from models import User
 from streamlit_cookies_manager import EncryptedCookieManager
@@ -44,7 +49,7 @@ def register_user():
             name=name,
             email=email,
             gender=gender,
-            password_hash=bcrypt.hash(password)
+            password_hash=pwd_context.hash(password)
         )
 
         db.add(user)
@@ -80,7 +85,7 @@ def login_user():
             db.close()
             return
 
-        if not bcrypt.verify(password, user.password_hash):
+       if not pwd_context.verify(password, user.password_hash):
             st.error("Invalid credentials")
             db.close()
             return
