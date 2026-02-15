@@ -21,18 +21,34 @@ def render_dashboard(profile_id: int):
     # =============================
     # HEADER CARD
     # =============================
-    st.markdown(
-        f"""
-        <div class="card">
-            <div class="metric-label">Relationship</div>
-            <div class="metric-value">{relationship.name}</div>
-            <div class="metric-label">
-                {relationship.relationship_type} • {relationship.category}
-            </div>
+    toxicity = relationship.toxicity_index or 0
+
+if toxicity > 60:
+    badge_class = "badge-high"
+    badge_text = "High Tension"
+elif toxicity > 30:
+    badge_class = "badge-mid"
+    badge_text = "Moderate Tension"
+else:
+    badge_class = "badge-low"
+    badge_text = "Stable"
+
+st.markdown(
+    f"""
+    <div class="card">
+        <div class="metric-label">Relationship</div>
+        <div class="metric-value">{relationship.name}</div>
+        <div class="metric-label">
+            {relationship.relationship_type} • {relationship.category}
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+        <div class="badge {badge_class}">
+            Toxicity Index: {toxicity} • {badge_text}
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 
     # =============================
     # LOAD LAST CONVERSATION
