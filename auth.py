@@ -1,27 +1,33 @@
 import streamlit as st
 from passlib.context import CryptContext
-
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
-)
 from database import SessionLocal
 from models import User
 from streamlit_cookies_manager import EncryptedCookieManager
 
-cookies = EncryptedCookieManager(
-    prefix="relationship_os_",
-    password="super-secret-key"
-)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-if not cookies.ready():
-    st.stop()
+
+# =========================
+# GET COOKIE MANAGER SAFELY
+# =========================
+def get_cookies():
+    cookies = EncryptedCookieManager(
+        prefix="relationship_os_",
+        password="super-secret-key"
+    )
+
+    if not cookies.ready():
+        st.stop()
+
+    return cookies
 
 
 # =========================
 # REGISTER
 # =========================
 def register_user():
+
+    cookies = get_cookies()
 
     st.subheader("Create Account")
 
@@ -58,9 +64,9 @@ def register_user():
         cookies["user_id"] = str(user.id)
         cookies.save()
 
-        st.success("Account created!")
         st.session_state["user_id"] = user.id
         st.session_state["user_email"] = user.email
+
         db.close()
         st.rerun()
 
@@ -69,6 +75,8 @@ def register_user():
 # LOGIN
 # =========================
 def login_user():
+
+    cookies = get_cookies()
 
     st.subheader("Login")
 
@@ -85,7 +93,7 @@ def login_user():
             db.close()
             return
 
-       if not pwd_context.verify(password, user.password_hash):
+        if not pwd_context.verify(password, user.password_hash):
             st.error("Invalid credentials")
             db.close()
             return
@@ -101,9 +109,11 @@ def login_user():
 
 
 # =========================
-# AUTO LOGIN FROM COOKIE
+# LOAD USER FROM COOKIE
 # =========================
 def load_user_from_cookie():
+
+    cookies = get_cookies()
 
     if "user_id" in cookies:
         user_id = cookies["user_id"]
@@ -123,7 +133,9 @@ def load_user_from_cookie():
 # =========================
 def logout_user():
 
-    if st.button("Logout"):
+    cookies = get_cookies()
+
+    if st.sidebar.button("Logout"):
         cookies["user_id"] = ""
         cookies.save()
         st.session_state.clear()
