@@ -5,3 +5,5 @@ streamlit-authenticator
 pyyaml
 authlib
 requests
+pytesseract
+Pillow
