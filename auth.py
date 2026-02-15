@@ -1,69 +1,125 @@
 import streamlit as st
-from authlib.integrations.requests_client import OAuth2Session
+from passlib.hash import bcrypt
 from database import SessionLocal
 from models import User
+from streamlit_cookies_manager import EncryptedCookieManager
 
-AUTH_URL = "https://accounts.google.com/o/oauth2/auth"
-TOKEN_URL = "https://oauth2.googleapis.com/token"
-USER_INFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
+cookies = EncryptedCookieManager(
+    prefix="relationship_os_",
+    password="super-secret-key"
+)
 
-
-def login_button():
-    client_id = st.secrets["auth"]["client_id"]
-    redirect_uri = st.secrets["auth"]["redirect_uri"]
-
-    oauth = OAuth2Session(
-        client_id,
-        redirect_uri=redirect_uri,
-        scope="openid email profile"
-    )
-
-    authorization_url, state = oauth.create_authorization_url(AUTH_URL)
-
-    st.session_state["oauth_state"] = state
-
-    st.markdown(f"[Login with Google]({authorization_url})")
+if not cookies.ready():
+    st.stop()
 
 
-def handle_callback():
+# =========================
+# REGISTER
+# =========================
+def register_user():
 
-    if "code" not in st.query_params:
-        return
+    st.subheader("Create Account")
 
-    client_id = st.secrets["auth"]["client_id"]
-    client_secret = st.secrets["auth"]["client_secret"]
-    redirect_uri = st.secrets["auth"]["redirect_uri"]
+    name = st.text_input("Full Name")
+    email = st.text_input("Email")
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+    password = st.text_input("Password", type="password")
+    confirm = st.text_input("Confirm Password", type="password")
 
-    # Reconstruct full callback URL manually
-    code = st.query_params["code"]
+    if st.button("Register"):
 
-    oauth = OAuth2Session(client_id, redirect_uri=redirect_uri)
+        if password != confirm:
+            st.error("Passwords do not match")
+            return
 
-    token = oauth.fetch_token(
-        TOKEN_URL,
-        client_secret=client_secret,
-        code=code
-    )
+        db = SessionLocal()
+        existing = db.query(User).filter_by(email=email).first()
 
-    resp = oauth.get(USER_INFO_URL)
-    user_info = resp.json()
+        if existing:
+            st.error("Email already registered")
+            db.close()
+            return
 
-    db = SessionLocal()
-
-    user = db.query(User).filter_by(email=user_info["email"]).first()
-
-    if not user:
         user = User(
-            email=user_info["email"],
-            name=user_info.get("name")
+            name=name,
+            email=email,
+            gender=gender,
+            password_hash=bcrypt.hash(password)
         )
+
         db.add(user)
         db.commit()
 
-    st.session_state["user_id"] = user.id
-    st.session_state["user_email"] = user.email
+        cookies["user_id"] = str(user.id)
+        cookies.save()
 
-    db.close()
+        st.success("Account created!")
+        st.session_state["user_id"] = user.id
+        st.session_state["user_email"] = user.email
+        db.close()
+        st.rerun()
 
-    # Clear query params after login
-    st.query_params.clear()
+
+# =========================
+# LOGIN
+# =========================
+def login_user():
+
+    st.subheader("Login")
+
+    email = st.text_input("Email")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+
+        db = SessionLocal()
+        user = db.query(User).filter_by(email=email).first()
+
+        if not user or not user.password_hash:
+            st.error("Invalid credentials")
+            db.close()
+            return
+
+        if not bcrypt.verify(password, user.password_hash):
+            st.error("Invalid credentials")
+            db.close()
+            return
+
+        cookies["user_id"] = str(user.id)
+        cookies.save()
+
+        st.session_state["user_id"] = user.id
+        st.session_state["user_email"] = user.email
+
+        db.close()
+        st.rerun()
+
+
+# =========================
+# AUTO LOGIN FROM COOKIE
+# =========================
+def load_user_from_cookie():
+
+    if "user_id" in cookies:
+        user_id = cookies["user_id"]
+
+        db = SessionLocal()
+        user = db.query(User).filter_by(id=int(user_id)).first()
+
+        if user:
+            st.session_state["user_id"] = user.id
+            st.session_state["user_email"] = user.email
+
+        db.close()
+
+
+# =========================
+# LOGOUT
+# =========================
+def logout_user():
+
+    if st.button("Logout"):
+        cookies["user_id"] = ""
+        cookies.save()
+        st.session_state.clear()
+        st.rerun()
