@@ -4,7 +4,11 @@ from passlib.context import CryptContext
 from database import SessionLocal
 from models import User
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# 🔥 Use PBKDF2 instead of bcrypt (stable on Streamlit Cloud)
+pwd_context = CryptContext(
+    schemes=["pbkdf2_sha256"],
+    deprecated="auto"
+)
 
 
 # =========================
