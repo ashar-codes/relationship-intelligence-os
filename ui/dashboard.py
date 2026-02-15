@@ -62,7 +62,24 @@ st.markdown(
 
     if last_convo:
 
-        st.markdown("## Relationship Metrics")
+       
+    st.markdown("## Relationship Metrics")
+
+    # 👇 ADD FUNCTION RIGHT HERE
+    def metric_card(title, value, color="white", glow=False):
+        glow_class = "glow-red" if glow else ""
+        st.markdown(
+            f"""
+            <div class="card {glow_class}">
+                <div class="metric-label">{title}</div>
+                <div class="metric-value" style="color:{color};">
+                    {value}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
         col1, col2 = st.columns(2)
         col3, col4 = st.columns(2)
