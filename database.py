@@ -12,6 +12,10 @@ SessionLocal = sessionmaker(bind=engine)
 
 Base = declarative_base()
 
+
 def init_db():
     Base.metadata.create_all(bind=engine)
-from models import Relationship, Conversation
+
+
+# Import models AFTER Base is defined
+from models import User, Relationship, Conversation
