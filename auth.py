@@ -20,13 +20,13 @@ def register_user():
 
     st.subheader("Create Account")
 
-    name = st.text_input("Full Name")
-    email = st.text_input("Email")
-    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-    password = st.text_input("Password", type="password")
-    confirm = st.text_input("Confirm Password", type="password")
+    name = st.text_input("Full Name", key="reg_name")
+    email = st.text_input("Email", key="reg_email")
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"], key="reg_gender")
+    password = st.text_input("Password", type="password", key="reg_password")
+    confirm = st.text_input("Confirm Password", type="password", key="reg_confirm")
 
-    if st.button("Register"):
+    if st.button("Register", key="reg_button"):
 
         if password != confirm:
             st.error("Passwords do not match")
@@ -67,10 +67,10 @@ def login_user():
 
     st.subheader("Login")
 
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
+    email = st.text_input("Email", key="login_email")
+    password = st.text_input("Password", type="password", key="login_password")
 
-    if st.button("Login"):
+    if st.button("Login", key="login_button"):
 
         db = SessionLocal()
         user = db.query(User).filter_by(email=email).first()
