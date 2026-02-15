@@ -19,36 +19,35 @@ def render_dashboard(profile_id: int):
         return
 
     # =============================
-    # HEADER CARD
+    # HEADER
     # =============================
     toxicity = relationship.toxicity_index or 0
 
-if toxicity > 60:
-    badge_class = "badge-high"
-    badge_text = "High Tension"
-elif toxicity > 30:
-    badge_class = "badge-mid"
-    badge_text = "Moderate Tension"
-else:
-    badge_class = "badge-low"
-    badge_text = "Stable"
+    if toxicity > 60:
+        badge_color = "#ef4444"
+        badge_text = "High Tension"
+    elif toxicity > 30:
+        badge_color = "#f59e0b"
+        badge_text = "Moderate Tension"
+    else:
+        badge_color = "#22c55e"
+        badge_text = "Stable"
 
-st.markdown(
-    f"""
-    <div class="card">
-        <div class="metric-label">Relationship</div>
-        <div class="metric-value">{relationship.name}</div>
-        <div class="metric-label">
-            {relationship.relationship_type} • {relationship.category}
+    st.markdown(
+        f"""
+        <div class="card">
+            <div class="metric-label">Relationship</div>
+            <div class="metric-value">{relationship.name}</div>
+            <div class="metric-label">
+                {relationship.relationship_type} • {relationship.category}
+            </div>
+            <div style="margin-top:10px;color:{badge_color};font-weight:500;">
+                Toxicity Index: {toxicity} • {badge_text}
+            </div>
         </div>
-        <div class="badge {badge_class}">
-            Toxicity Index: {toxicity} • {badge_text}
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
+        """,
+        unsafe_allow_html=True
+    )
 
     # =============================
     # LOAD LAST CONVERSATION
@@ -62,33 +61,13 @@ st.markdown(
 
     if last_convo:
 
-       
-    st.markdown("## Relationship Metrics")
-
-    # 👇 ADD FUNCTION RIGHT HERE
-    def metric_card(title, value, color="white", glow=False):
-        glow_class = "glow-red" if glow else ""
-        st.markdown(
-            f"""
-            <div class="card {glow_class}">
-                <div class="metric-label">{title}</div>
-                <div class="metric-value" style="color:{color};">
-                    {value}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-
-        col1, col2 = st.columns(2)
-        col3, col4 = st.columns(2)
+        st.markdown("## Relationship Metrics")
 
         def metric_card(title, value, color="white", glow=False):
-            glow_class = "glow-red" if glow else ""
+            glow_style = "box-shadow:0 0 20px rgba(255,0,0,0.6);" if glow else ""
             st.markdown(
                 f"""
-                <div class="card {glow_class}">
+                <div class="card" style="{glow_style}">
                     <div class="metric-label">{title}</div>
                     <div class="metric-value" style="color:{color};">
                         {value}
@@ -97,6 +76,9 @@ st.markdown(
                 """,
                 unsafe_allow_html=True
             )
+
+        col1, col2 = st.columns(2)
+        col3, col4 = st.columns(2)
 
         health_color = "#22c55e" if last_convo.health_score > 70 else "#f59e0b"
         safety_color = "#3b82f6" if last_convo.safety_score > 70 else "#f59e0b"
@@ -115,45 +97,16 @@ st.markdown(
         with col4:
             metric_card("Partner B Risk", f"{last_convo.risk_b}%", risk_b_color, glow=last_convo.risk_b > 70)
 
-        # =============================
-        # RED FLAG INTELLIGENCE CARD
-        # =============================
-        st.markdown("## Intelligence Insight")
-
-        if last_convo.risk_b > 70:
-            insight = "🚩 High escalation pattern detected. Emotional safety is compromised."
-            color = "#ef4444"
-        elif last_convo.risk_b > 40:
-            insight = "⚠ Early warning signals present. Monitor communication tone."
-            color = "#f59e0b"
-        else:
-            insight = "✅ Communication currently stable."
-            color = "#22c55e"
-
-        st.markdown(
-            f"""
-            <div class="card">
-                <div class="metric-value" style="color:{color};">
-                    {insight}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
     else:
         st.info("No conversations analyzed yet.")
 
     # =============================
-    # SMART TOOLS (TABS)
+    # SMART TOOLS
     # =============================
     st.markdown("## Smart Tools")
 
     tab1, tab2, tab3 = st.tabs(["Analyze", "Feeling Stuck?", "Repair"])
 
-    # -----------------------------
-    # TAB 1 - ANALYZE
-    # -----------------------------
     with tab1:
         conversation_text = st.text_area("Paste conversation here")
 
@@ -188,9 +141,6 @@ st.markdown(
                 st.success("Conversation analyzed.")
                 st.rerun()
 
-    # -----------------------------
-    # TAB 2 - BLOCK ASSISTANT
-    # -----------------------------
     with tab2:
         block_context = st.text_area("Paste last few lines")
 
@@ -205,9 +155,6 @@ st.markdown(
             if responses:
                 st.markdown(responses)
 
-    # -----------------------------
-    # TAB 3 - REPAIR
-    # -----------------------------
     with tab3:
         repair_context = st.text_area("Repair context")
 
