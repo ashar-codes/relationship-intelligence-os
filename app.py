@@ -13,47 +13,87 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-/* Global background */
+/* Background */
 body {
     background-color: #0f172a;
 }
 
-/* Main container spacing */
+/* Remove default padding */
 .block-container {
     padding-top: 2rem;
     padding-bottom: 2rem;
 }
 
-/* Card style */
+/* Sidebar styling */
+section[data-testid="stSidebar"] {
+    background-color: #0b1220;
+    border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Card styling */
 .card {
-    background: #1e293b;
+    background: linear-gradient(145deg, #1e293b, #172033);
     padding: 24px;
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
     margin-bottom: 20px;
+    transition: all 0.3s ease-in-out;
 }
 
-/* Metric number */
+/* Hover effect */
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+}
+
+/* Metric value */
 .metric-value {
-    font-size: 32px;
+    font-size: 36px;
     font-weight: 600;
-    color: white;
+    letter-spacing: -1px;
+    transition: all 0.4s ease-in-out;
 }
 
-/* Subtext */
+/* Label */
 .metric-label {
     font-size: 14px;
-    opacity: 0.7;
-    color: #cbd5e1;
+    opacity: 0.6;
+    margin-bottom: 8px;
 }
 
 /* Glow for high risk */
 .glow-red {
-    box-shadow: 0 0 20px rgba(255,0,0,0.4);
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+}
+
+/* Badge style */
+.badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 10px;
+}
+
+.badge-low {
+    background-color: rgba(34,197,94,0.15);
+    color: #22c55e;
+}
+
+.badge-mid {
+    background-color: rgba(245,158,11,0.15);
+    color: #f59e0b;
+}
+
+.badge-high {
+    background-color: rgba(239,68,68,0.15);
+    color: #ef4444;
 }
 
 </style>
 """, unsafe_allow_html=True)
+
 
 init_db()
 
